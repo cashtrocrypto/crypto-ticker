@@ -43,7 +43,7 @@
     right: 0;
     width: 1285px;
     height: 64px;
-    background: transparent;
+    background: #152B2B; /* green banner background */
     box-sizing: border-box;
     overflow: hidden;
   }
@@ -54,7 +54,6 @@
     top: 0;
     left: 0;
     height: 64px;
-    width: 200%; /* two tracks side-by-side */
     display: flex;
     will-change: transform;
     backface-visibility: hidden;
@@ -67,16 +66,18 @@
     display: flex;
     align-items: center;
     height: 64px;
-    width: 50%;
     flex-shrink: 0;
+    white-space: nowrap;
+    min-width: fit-content;
   }
 
-  /* Animation: translateX from 100% to -50% for seamless infinite loop */
+  /* Animation: translateX from 0% to -50% for seamless infinite loop */
+  /* When trackA is fully off-screen to the left, trackB is fully visible */
   @keyframes scroll-x {
-    0% { 
-      transform: translate3d(100%, 0, 0);
+    from { 
+      transform: translate3d(0, 0, 0);
     }
-    100% { 
+    to { 
       transform: translate3d(-50%, 0, 0);
     }
   }
@@ -253,13 +254,6 @@
   }
 
   function renderItems(data) {
-    // Store current animation state to prevent jumps
-    const scroller = document.getElementById('scroller');
-    const wasAnimating = scroller.style.animationPlayState !== 'paused';
-    
-    // Pause animation during update to prevent glitches
-    scroller.style.animationPlayState = 'paused';
-    
     const makeItem = (item) => {
       const container = document.createElement('div');
       container.className = 'ticker-item';
@@ -301,14 +295,13 @@
     trackA.innerHTML = '';
     trackB.innerHTML = '';
 
-    // Duplicate data for seamless loop (each track gets same data)
-    data.forEach(d => trackA.appendChild(makeItem(d)));
-    data.forEach(d => trackB.appendChild(makeItem(d)));
-
-    // Restore animation state smoothly
-    requestAnimationFrame(() => {
-      scroller.style.animationPlayState = wasAnimating ? 'running' : 'paused';
-    });
+    // Create items once
+    const items = data.map(d => makeItem(d));
+    
+    // Each track gets identical content - this ensures seamless infinite loop
+    // When trackA scrolls off to the left, trackB (identical content) appears from the right
+    items.forEach(item => trackA.appendChild(item));
+    items.forEach(item => trackB.appendChild(item.cloneNode(true)));
   }
 
 
@@ -386,11 +379,7 @@
   // Initialize: Show demo immediately (no loading screen)
   renderItems(demoData);
   
-  // Start animation after initial render
-  requestAnimationFrame(() => {
-    const scroller = document.getElementById('scroller');
-    scroller.style.animationPlayState = 'running';
-  });
+  // Animation starts immediately via CSS, no delay needed
 
   // First refresh shortly after load to avoid jank
   setTimeout(refresh, 500);
