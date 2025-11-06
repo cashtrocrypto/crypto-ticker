@@ -165,97 +165,98 @@
 
 <script>
 (function() {
+  // Top 20 cryptocurrencies by market cap (from CoinGecko)
   const TICKER_IDS = [
-    'bitcoin',
-    'ethereum',
-    'binancecoin',
-    'solana',
-    'ripple', /* XRP on CoinGecko is 'ripple' */
-    'cardano',
-    'avalanche-2', /* Avalanche */
-    'dogecoin',
-    'chainlink',
-    'the-open-network', /* Toncoin */
-    'shiba-inu',
-    'polygon-pos',
-    'litecoin',
-    'bitcoin-cash',
-    'near', /* NEAR Protocol */
-    'uniswap',
-    'internet-computer',
-    'ethereum-classic',
-    'render-token',
-    'hedera-hashgraph'
+    'bitcoin',           // 1. Bitcoin (BTC)
+    'ethereum',          // 2. Ethereum (ETH)
+    'ripple',            // 3. XRP (XRP)
+    'binancecoin',       // 4. BNB (BNB)
+    'solana',            // 5. Solana (SOL)
+    'tron',              // 6. TRON (TRX)
+    'dogecoin',          // 7. Dogecoin (DOGE)
+    'cardano',           // 8. Cardano (ADA)
+    'wrapped-bitcoin',   // 9. Wrapped Bitcoin (WBIT)
+    'hyperliquid',       // 10. Hyperliquid (HYPE)
+    'chainlink',         // 11. Chainlink (LINK)
+    'bitcoin-cash',      // 12. Bitcoin Cash (BCH)
+    'stellar',           // 13. Stellar (XLM)
+    'unus-sed-leo',      // 14. LEO Token (LEO)
+    'zcash',             // 15. Zcash (ZEC)
+    'sui',               // 16. Sui (SUI)
+    'hedera-hashgraph',  // 17. Hedera (HBAR)
+    'avalanche-2',       // 18. Avalanche (AVAX)
+    'litecoin',          // 19. Litecoin (LTC)
+    'monero'             // 20. Monero (XMR)
   ];
 
   const LOGO_URL = {
     bitcoin: 'https://assets.coingecko.com/coins/images/1/small/bitcoin.png',
     ethereum: 'https://assets.coingecko.com/coins/images/279/small/ethereum.png',
+    ripple: 'https://assets.coingecko.com/coins/images/44/small/xrp-symbol-white-128.png',
     binancecoin: 'https://assets.coingecko.com/coins/images/825/small/bnb-icon2_2x.png',
     solana: 'https://assets.coingecko.com/coins/images/4128/small/solana.png',
-    ripple: 'https://assets.coingecko.com/coins/images/44/small/xrp-symbol-white-128.png',
-    cardano: 'https://assets.coingecko.com/coins/images/975/small/cardano.png',
-    'avalanche-2': 'https://assets.coingecko.com/coins/images/12559/small/coin-round-red.png',
+    tron: 'https://assets.coingecko.com/coins/images/1094/small/tron-logo.png',
     dogecoin: 'https://assets.coingecko.com/coins/images/5/small/dogecoin.png',
+    cardano: 'https://assets.coingecko.com/coins/images/975/small/cardano.png',
+    'wrapped-bitcoin': 'https://assets.coingecko.com/coins/images/7598/small/wrapped_bitcoin_wbtc.png',
+    hyperliquid: 'https://assets.coingecko.com/coins/images/34130/small/hyperliquid.png',
     chainlink: 'https://assets.coingecko.com/coins/images/877/small/chainlink-new-logo.png',
-    'the-open-network': 'https://assets.coingecko.com/coins/images/17980/small/ton_symbol.png',
-    'shiba-inu': 'https://assets.coingecko.com/coins/images/11939/small/shiba.png',
-    'polygon-pos': 'https://assets.coingecko.com/coins/images/4713/small/polygon.png',
-    litecoin: 'https://assets.coingecko.com/coins/images/2/small/litecoin.png',
     'bitcoin-cash': 'https://assets.coingecko.com/coins/images/780/small/bitcoin-cash-circle.png',
-    near: 'https://assets.coingecko.com/coins/images/10365/small/near.png',
-    uniswap: 'https://assets.coingecko.com/coins/images/12504/small/uniswap-uni.png',
-    'internet-computer': 'https://assets.coingecko.com/coins/images/14495/small/Internet_Computer_logo.png',
-    'ethereum-classic': 'https://assets.coingecko.com/coins/images/453/small/ethereum-classic-logo.png',
-    'render-token': 'https://assets.coingecko.com/coins/images/11636/small/Render.png',
-    'hedera-hashgraph': 'https://assets.coingecko.com/coins/images/3688/small/hbar.png'
+    stellar: 'https://assets.coingecko.com/coins/images/100/small/stellar.png',
+    'unus-sed-leo': 'https://assets.coingecko.com/coins/images/8418/small/leo-token.png',
+    zcash: 'https://assets.coingecko.com/coins/images/486/small/zcash.png',
+    sui: 'https://assets.coingecko.com/coins/images/26375/small/sui.png',
+    'hedera-hashgraph': 'https://assets.coingecko.com/coins/images/3688/small/hbar.png',
+    'avalanche-2': 'https://assets.coingecko.com/coins/images/12559/small/coin-round-red.png',
+    litecoin: 'https://assets.coingecko.com/coins/images/2/small/litecoin.png',
+    monero: 'https://assets.coingecko.com/coins/images/69/small/monero.png'
   };
 
   const SYMBOL = {
     bitcoin: 'BTC',
     ethereum: 'ETH',
+    ripple: 'XRP',
     binancecoin: 'BNB',
     solana: 'SOL',
-    ripple: 'XRP',
-    cardano: 'ADA',
-    'avalanche-2': 'AVAX',
+    tron: 'TRX',
     dogecoin: 'DOGE',
+    cardano: 'ADA',
+    'wrapped-bitcoin': 'WBIT',
+    hyperliquid: 'HYPE',
     chainlink: 'LINK',
-    'the-open-network': 'TON',
-    'shiba-inu': 'SHIB',
-    'polygon-pos': 'MATIC',
-    litecoin: 'LTC',
     'bitcoin-cash': 'BCH',
-    near: 'NEAR',
-    uniswap: 'UNI',
-    'internet-computer': 'ICP',
-    'ethereum-classic': 'ETC',
-    'render-token': 'RNDR',
-    'hedera-hashgraph': 'HBAR'
+    stellar: 'XLM',
+    'unus-sed-leo': 'LEO',
+    zcash: 'ZEC',
+    sui: 'SUI',
+    'hedera-hashgraph': 'HBAR',
+    'avalanche-2': 'AVAX',
+    litecoin: 'LTC',
+    monero: 'XMR'
   };
 
   // Demo data with realistic prices (shown immediately; updated after fetch)
   const DEMO_PRICES = {
     bitcoin: 43250.50,
     ethereum: 2650.75,
+    ripple: 0.62,
     binancecoin: 315.20,
     solana: 98.45,
-    ripple: 0.62,
-    cardano: 0.48,
-    'avalanche-2': 36.80,
+    tron: 0.12,
     dogecoin: 0.092,
+    cardano: 0.48,
+    'wrapped-bitcoin': 43200.00,
+    hyperliquid: 0.85,
     chainlink: 14.85,
-    'the-open-network': 2.35,
-    'shiba-inu': 0.0000092,
-    'polygon-pos': 0.85, // MATIC realistic price
-    litecoin: 72.40,
     'bitcoin-cash': 245.60,
-    near: 3.25,
-    uniswap: 6.45,
-    'internet-computer': 12.80,
-    'ethereum-classic': 26.90,
-    'render-token': 4.75,
-    'hedera-hashgraph': 0.078
+    stellar: 0.11,
+    'unus-sed-leo': 5.20,
+    zcash: 25.50,
+    sui: 2.04,
+    'hedera-hashgraph': 0.078,
+    'avalanche-2': 36.80,
+    litecoin: 72.40,
+    monero: 150.00
   };
 
   const demoData = TICKER_IDS.map((id) => ({
