@@ -234,11 +234,34 @@
     'hedera-hashgraph': 'HBAR'
   };
 
-  // Demo data: shown immediately; updated after fetch
-  const demoData = TICKER_IDS.map((id, idx) => ({
+  // Demo data with realistic prices (shown immediately; updated after fetch)
+  const DEMO_PRICES = {
+    bitcoin: 43250.50,
+    ethereum: 2650.75,
+    binancecoin: 315.20,
+    solana: 98.45,
+    ripple: 0.62,
+    cardano: 0.48,
+    'avalanche-2': 36.80,
+    dogecoin: 0.092,
+    chainlink: 14.85,
+    'the-open-network': 2.35,
+    'shiba-inu': 0.0000092,
+    'polygon-pos': 0.85, // MATIC realistic price
+    litecoin: 72.40,
+    'bitcoin-cash': 245.60,
+    near: 3.25,
+    uniswap: 6.45,
+    'internet-computer': 12.80,
+    'ethereum-classic': 26.90,
+    'render-token': 4.75,
+    'hedera-hashgraph': 0.078
+  };
+
+  const demoData = TICKER_IDS.map((id) => ({
     id,
     symbol: SYMBOL[id] || id.toUpperCase(),
-    price: (Math.random() * (60000 - 0.01) + 0.01).toFixed(2),
+    price: DEMO_PRICES[id] || 0.01,
     change24h: (Math.random() * 10 - 5).toFixed(2), // -5% to +5%
     logo: LOGO_URL[id]
   }));
@@ -334,24 +357,31 @@
   function mergeLiveData(json) {
     if (!json) return null;
     try {
-      const out = TICKER_IDS.map(id => {
+      const out = TICKER_IDS.map((id, index) => {
         const entry = json[id];
         const price = entry && (entry.usd ?? entry.USD);
         const change = entry && (entry.usd_24h_change ?? entry.usd24hchange ?? entry.usd_change_24h);
+        
+        // If price is missing or invalid, use demo data price
+        const finalPrice = (typeof price === 'number' && price > 0) 
+          ? price 
+          : Number(demoData[index].price);
+        
+        const finalChange = (typeof change === 'number') 
+          ? change 
+          : Number(demoData[index].change24h);
+        
         return {
           id,
           symbol: SYMBOL[id] || id.toUpperCase(),
-          price: typeof price === 'number' ? price : null,
-          change24h: typeof change === 'number' ? change : null,
+          price: finalPrice,
+          change24h: finalChange,
           logo: LOGO_URL[id]
         };
       });
-      return out.map((d, i) => ({
-        ...d,
-        price: d.price == null ? Number(demoData[i].price) : d.price,
-        change24h: d.change24h == null ? Number(demoData[i].change24h) : d.change24h
-      }));
-    } catch {
+      return out;
+    } catch (error) {
+      console.error('Error merging live data:', error);
       return null;
     }
   }
