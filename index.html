@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=1920, initial-scale=1.0" />
+<title>Crypto Ticker</title>
+<style>
+  /* Fonts: place silka-regular.woff and silka-medium.woff next to this HTML file */
+  @font-face {
+    font-family: 'Silka';
+    src: url('./silka-regular.woff') format('woff');
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+  }
+  @font-face {
+    font-family: 'Silka';
+    src: url('./silka-medium.woff') format('woff');
+    font-weight: 500;
+    font-style: normal;
+    font-display: swap;
+  }
+
+  /* Canvas 1920x1080 */
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: #000; /* outside canvas background (not visible in LiveU crop) */
+  }
+  .canvas {
+    width: 1920px;
+    height: 1080px;
+    position: relative;
+    overflow: hidden;
+    background: transparent;
+  }
+
+  /* Ticker container exact size and right alignment */
+  .ticker-container {
+    position: absolute;
+    top: 0; /* adjust if needed; spec did not define vertical position */
+    right: 0;
+    width: 1285px;
+    height: 64px;
+    background: #152B2B; /* solid background */
+    box-sizing: border-box; /* ensure exact outer size */
+    overflow: hidden; /* hide overflow for scroll */
+  }
+
+  /* Scroller area */
+  .ticker-scroller {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 64px;
+    width: 200%; /* two tracks side-by-side */
+    display: flex;
+    will-change: transform;
+    backface-visibility: hidden;
+    transform: translate3d(0, 0, 0);
+    animation: scroll-x 270s linear infinite;
+  }
+
+  /* Duplicate tracks for seamless loop */
+  .ticker-track {
+    display: flex;
+    align-items: center;
+    height: 64px;
+    width: 50%;
+  }
+
+  /* Animation per spec: translateX from 100% to -50% */
+  @keyframes scroll-x {
+    0% { transform: translate3d(100%, 0, 0); }
+    100% { transform: translate3d(-50%, 0, 0); }
+  }
+
+  /* Typography */
+  .ticker-item {
+    display: inline-flex;
+    align-items: center;
+    margin-right: 40px; /* spacing between ticker items */
+    white-space: nowrap;
+  }
+
+  .logo {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    object-fit: cover;
+    flex: 0 0 24px;
+  }
+
+  .symbol {
+    margin-left: 12px; /* gap between elements */
+    font-family: 'Silka', system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+    font-weight: 500; /* Silka Medium */
+    font-size: 16px;
+    line-height: 1; /* 100% */
+    letter-spacing: 5px;
+    color: #ffffff;
+    text-transform: uppercase;
+  }
+
+  .price {
+    margin-left: 12px;
+    font-family: 'Silka', system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+    font-weight: 400; /* Silka Regular */
+    font-size: 16px;
+    line-height: 1;
+    letter-spacing: 5px;
+    color: #ffffff;
+    background: #1F3D3D;
+    border-radius: 10px;
+    padding: 6px 8px; /* 6px top/bottom, 8px left/right */
+  }
+
+  .percent {
+    margin-left: 12px;
+    font-family: 'Silka', system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+    font-weight: 400; /* Silka Regular */
+    font-size: 16px;
+    line-height: 1;
+    letter-spacing: 5px;
+    border-radius: 10px;
+    padding: 6px 8px;
+  }
+
+  .percent.positive {
+    background: #20513C;
+    color: #3EDF84;
+  }
+
+  .percent.negative {
+    background: #E664244A; /* RGBA-like hex with alpha from spec */
+    color: #DD7900;
+  }
+
+  /* Ensure no accidental extra spacing inflates dimensions */
+  * { box-sizing: border-box; }
+</style>
+</head>
+<body>
+  <div class="canvas">
+    <div class="ticker-container" id="ticker">
+      <div class="ticker-scroller" id="scroller">
+        <div class="ticker-track" id="trackA"></div>
+        <div class="ticker-track" id="trackB"></div>
+      </div>
+    </div>
+  </div>
+
+<script>
+(function() {
+  const TICKER_IDS = [
+    'bitcoin',
+    'ethereum',
+    'binancecoin',
+    'solana',
+    'ripple', /* XRP on CoinGecko is 'ripple' */
+    'cardano',
+    'avalanche-2', /* Avalanche */
+    'dogecoin',
+    'chainlink',
+    'the-open-network', /* Toncoin */
+    'shiba-inu',
+    'polygon-pos',
+    'litecoin',
+    'bitcoin-cash',
+    'near', /* NEAR Protocol */
+    'uniswap',
+    'internet-computer',
+    'ethereum-classic',
+    'render-token',
+    'hedera-hashgraph'
+  ];
+
+  const LOGO_URL = {
+    bitcoin: 'https://assets.coingecko.com/coins/images/1/small/bitcoin.png',
+    ethereum: 'https://assets.coingecko.com/coins/images/279/small/ethereum.png',
+    binancecoin: 'https://assets.coingecko.com/coins/images/825/small/bnb-icon2_2x.png',
+    solana: 'https://assets.coingecko.com/coins/images/4128/small/solana.png',
+    ripple: 'https://assets.coingecko.com/coins/images/44/small/xrp-symbol-white-128.png',
+    cardano: 'https://assets.coingecko.com/coins/images/975/small/cardano.png',
+    'avalanche-2': 'https://assets.coingecko.com/coins/images/12559/small/coin-round-red.png',
+    dogecoin: 'https://assets.coingecko.com/coins/images/5/small/dogecoin.png',
+    chainlink: 'https://assets.coingecko.com/coins/images/877/small/chainlink-new-logo.png',
+    'the-open-network': 'https://assets.coingecko.com/coins/images/17980/small/ton_symbol.png',
+    'shiba-inu': 'https://assets.coingecko.com/coins/images/11939/small/shiba.png',
+    'polygon-pos': 'https://assets.coingecko.com/coins/images/4713/small/polygon.png',
+    litecoin: 'https://assets.coingecko.com/coins/images/2/small/litecoin.png',
+    'bitcoin-cash': 'https://assets.coingecko.com/coins/images/780/small/bitcoin-cash-circle.png',
+    near: 'https://assets.coingecko.com/coins/images/10365/small/near.png',
+    uniswap: 'https://assets.coingecko.com/coins/images/12504/small/uniswap-uni.png',
+    'internet-computer': 'https://assets.coingecko.com/coins/images/14495/small/Internet_Computer_logo.png',
+    'ethereum-classic': 'https://assets.coingecko.com/coins/images/453/small/ethereum-classic-logo.png',
+    'render-token': 'https://assets.coingecko.com/coins/images/11636/small/Render.png',
+    'hedera-hashgraph': 'https://assets.coingecko.com/coins/images/3688/small/hbar.png'
+  };
+
+  const SYMBOL = {
+    bitcoin: 'BTC',
+    ethereum: 'ETH',
+    binancecoin: 'BNB',
+    solana: 'SOL',
+    ripple: 'XRP',
+    cardano: 'ADA',
+    'avalanche-2': 'AVAX',
+    dogecoin: 'DOGE',
+    chainlink: 'LINK',
+    'the-open-network': 'TON',
+    'shiba-inu': 'SHIB',
+    'polygon-pos': 'MATIC',
+    litecoin: 'LTC',
+    'bitcoin-cash': 'BCH',
+    near: 'NEAR',
+    uniswap: 'UNI',
+    'internet-computer': 'ICP',
+    'ethereum-classic': 'ETC',
+    'render-token': 'RNDR',
+    'hedera-hashgraph': 'HBAR'
+  };
+
+  // Demo data: shown immediately; updated after fetch
+  const demoData = TICKER_IDS.map((id, idx) => ({
+    id,
+    symbol: SYMBOL[id] || id.toUpperCase(),
+    price: (Math.random() * (60000 - 0.01) + 0.01).toFixed(2),
+    change24h: (Math.random() * 10 - 5).toFixed(2), // -5% to +5%
+    logo: LOGO_URL[id]
+  }));
+
+  const trackA = document.getElementById('trackA');
+  const trackB = document.getElementById('trackB');
+
+  function formatPrice(v) {
+    const n = Number(v);
+    if (n >= 1000) return n.toLocaleString(undefined, { maximumFractionDigits: 2, minimumFractionDigits: 2 });
+    if (n >= 1) return n.toLocaleString(undefined, { maximumFractionDigits: 2, minimumFractionDigits: 2 });
+    return n.toLocaleString(undefined, { maximumFractionDigits: 6, minimumFractionDigits: 2 });
+  }
+
+  function renderItems(data) {
+    const makeItem = (item) => {
+      const container = document.createElement('div');
+      container.className = 'ticker-item';
+
+      const img = document.createElement('img');
+      img.className = 'logo';
+      img.alt = item.symbol;
+      img.width = 24;
+      img.height = 24;
+      img.loading = 'eager';
+      img.src = item.logo || '';
+
+      const sym = document.createElement('div');
+      sym.className = 'symbol';
+      sym.textContent = item.symbol || item.id.toUpperCase();
+
+      const price = document.createElement('div');
+      price.className = 'price';
+      price.textContent = `$${formatPrice(item.price)}`;
+
+      const percent = document.createElement('div');
+      const isPos = Number(item.change24h) >= 0;
+      percent.className = 'percent ' + (isPos ? 'positive' : 'negative');
+      const sign = isPos ? '+' : '';
+      percent.textContent = `${sign}${Number(item.change24h).toFixed(2)}%`;
+
+      container.appendChild(img);
+      container.appendChild(sym);
+      container.appendChild(price);
+      container.appendChild(percent);
+      return container;
+    };
+
+    trackA.innerHTML = '';
+    trackB.innerHTML = '';
+
+    data.forEach(d => trackA.appendChild(makeItem(d)));
+    data.forEach(d => trackB.appendChild(makeItem(d)));
+  }
+
+  // Show demo immediately
+  renderItems(demoData);
+
+  async function fetchWithFallbacks() {
+    const base = 'https://api.coingecko.com/api/v3/simple/price';
+    const params = new URLSearchParams({
+      ids: TICKER_IDS.join(','),
+      vs_currencies: 'usd',
+      include_24hr_change: 'true'
+    });
+
+    const endpoints = [
+      `${base}?${params.toString()}`,
+      `https://api.allorigins.win/raw?url=${encodeURIComponent(`${base}?${params.toString()}`)}`
+    ];
+
+    for (const url of endpoints) {
+      try {
+        const res = await fetch(url, { cache: 'no-store', mode: 'cors' });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const json = await res.json();
+        return json;
+      } catch (e) {
+        // try next
+      }
+    }
+    return null;
+  }
+
+  function mergeLiveData(json) {
+    if (!json) return null;
+    try {
+      const out = TICKER_IDS.map(id => {
+        const entry = json[id];
+        const price = entry && (entry.usd ?? entry.USD);
+        const change = entry && (entry.usd_24h_change ?? entry.usd24hchange ?? entry.usd_change_24h);
+        return {
+          id,
+          symbol: SYMBOL[id] || id.toUpperCase(),
+          price: typeof price === 'number' ? price : null,
+          change24h: typeof change === 'number' ? change : null,
+          logo: LOGO_URL[id]
+        };
+      });
+      return out.map((d, i) => ({
+        ...d,
+        price: d.price == null ? Number(demoData[i].price) : d.price,
+        change24h: d.change24h == null ? Number(demoData[i].change24h) : d.change24h
+      }));
+    } catch {
+      return null;
+    }
+  }
+
+  async function refresh() {
+    const raw = await fetchWithFallbacks();
+    const merged = mergeLiveData(raw);
+    if (merged) {
+      renderItems(merged);
+    }
+  }
+
+  // First refresh shortly after load to avoid jank
+  setTimeout(refresh, 100);
+  // Update every 60 seconds
+  setInterval(refresh, 60000);
+})();
+</script>
+</body>
+</html> 
