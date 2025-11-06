@@ -39,13 +39,13 @@
   /* Ticker container exact size and right alignment */
   .ticker-container {
     position: absolute;
-    top: 0; /* adjust if needed; spec did not define vertical position */
+    top: 0;
     right: 0;
     width: 1285px;
     height: 64px;
     background: #152B2B; /* solid background */
-    box-sizing: border-box; /* ensure exact outer size */
-    overflow: hidden; /* hide overflow for scroll */
+    box-sizing: border-box;
+    overflow: hidden;
   }
 
   /* Scroller area */
@@ -82,14 +82,17 @@
     align-items: center;
     margin-right: 40px; /* spacing between ticker items */
     white-space: nowrap;
+    height: 64px;
+    flex-shrink: 0;
   }
 
   .logo {
     width: 24px;
     height: 24px;
+    min-width: 24px;
     border-radius: 50%;
     object-fit: cover;
-    flex: 0 0 24px;
+    display: block;
   }
 
   .symbol {
@@ -98,9 +101,10 @@
     font-weight: 500; /* Silka Medium */
     font-size: 16px;
     line-height: 1; /* 100% */
-    letter-spacing: 5px;
+    letter-spacing: 0.05em; /* 5% of font size */
     color: #ffffff;
     text-transform: uppercase;
+    white-space: nowrap;
   }
 
   .price {
@@ -109,11 +113,12 @@
     font-weight: 400; /* Silka Regular */
     font-size: 16px;
     line-height: 1;
-    letter-spacing: 5px;
+    letter-spacing: 0.05em; /* 5% of font size */
     color: #ffffff;
     background: #1F3D3D;
     border-radius: 10px;
     padding: 6px 8px; /* 6px top/bottom, 8px left/right */
+    white-space: nowrap;
   }
 
   .percent {
@@ -122,9 +127,10 @@
     font-weight: 400; /* Silka Regular */
     font-size: 16px;
     line-height: 1;
-    letter-spacing: 5px;
+    letter-spacing: 0.05em; /* 5% of font size */
     border-radius: 10px;
     padding: 6px 8px;
+    white-space: nowrap;
   }
 
   .percent.positive {
@@ -133,7 +139,7 @@
   }
 
   .percent.negative {
-    background: #E664244A; /* RGBA-like hex with alpha from spec */
+    background: rgba(230, 100, 36, 0.29); /* #E66424 with 4A (74/255 ≈ 0.29) alpha */
     color: #DD7900;
   }
 
@@ -253,6 +259,10 @@
       img.height = 24;
       img.loading = 'eager';
       img.src = item.logo || '';
+      img.onerror = function() {
+        // Hide broken images gracefully
+        this.style.display = 'none';
+      };
 
       const sym = document.createElement('div');
       sym.className = 'symbol';
