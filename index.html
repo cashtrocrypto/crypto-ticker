@@ -26,7 +26,7 @@
   html, body {
     margin: 0;
     padding: 0;
-    background: #000; /* outside canvas background (not visible in LiveU crop) */
+    background: transparent;
   }
   .canvas {
     width: 1920px;
@@ -43,7 +43,7 @@
     right: 0;
     width: 1285px;
     height: 64px;
-    background: #152B2B; /* solid background */
+    background: transparent;
     box-sizing: border-box;
     overflow: hidden;
   }
@@ -59,7 +59,7 @@
     will-change: transform;
     backface-visibility: hidden;
     transform: translate3d(0, 0, 0);
-    animation: scroll-x 270s linear infinite;
+    animation: scroll-x 60s linear infinite;
   }
 
   /* Duplicate tracks for seamless loop */
@@ -68,12 +68,17 @@
     align-items: center;
     height: 64px;
     width: 50%;
+    flex-shrink: 0;
   }
 
-  /* Animation per spec: translateX from 100% to -50% */
+  /* Animation: translateX from 100% to -50% for seamless infinite loop */
   @keyframes scroll-x {
-    0% { transform: translate3d(100%, 0, 0); }
-    100% { transform: translate3d(-50%, 0, 0); }
+    0% { 
+      transform: translate3d(100%, 0, 0);
+    }
+    100% { 
+      transform: translate3d(-50%, 0, 0);
+    }
   }
 
   /* Typography */
@@ -248,6 +253,13 @@
   }
 
   function renderItems(data) {
+    // Store current animation state to prevent jumps
+    const scroller = document.getElementById('scroller');
+    const wasAnimating = scroller.style.animationPlayState !== 'paused';
+    
+    // Pause animation during update to prevent glitches
+    scroller.style.animationPlayState = 'paused';
+    
     const makeItem = (item) => {
       const container = document.createElement('div');
       container.className = 'ticker-item';
@@ -285,15 +297,20 @@
       return container;
     };
 
+    // Clear and rebuild tracks
     trackA.innerHTML = '';
     trackB.innerHTML = '';
 
+    // Duplicate data for seamless loop (each track gets same data)
     data.forEach(d => trackA.appendChild(makeItem(d)));
     data.forEach(d => trackB.appendChild(makeItem(d)));
+
+    // Restore animation state smoothly
+    requestAnimationFrame(() => {
+      scroller.style.animationPlayState = wasAnimating ? 'running' : 'paused';
+    });
   }
 
-  // Show demo immediately
-  renderItems(demoData);
 
   async function fetchWithFallbacks() {
     const base = 'https://api.coingecko.com/api/v3/simple/price';
@@ -346,16 +363,37 @@
     }
   }
 
+  let isRefreshing = false;
+  
   async function refresh() {
-    const raw = await fetchWithFallbacks();
-    const merged = mergeLiveData(raw);
-    if (merged) {
-      renderItems(merged);
+    // Prevent concurrent refreshes
+    if (isRefreshing) return;
+    isRefreshing = true;
+    
+    try {
+      const raw = await fetchWithFallbacks();
+      const merged = mergeLiveData(raw);
+      if (merged) {
+        renderItems(merged);
+      }
+    } catch (error) {
+      console.error('Refresh error:', error);
+    } finally {
+      isRefreshing = false;
     }
   }
 
+  // Initialize: Show demo immediately (no loading screen)
+  renderItems(demoData);
+  
+  // Start animation after initial render
+  requestAnimationFrame(() => {
+    const scroller = document.getElementById('scroller');
+    scroller.style.animationPlayState = 'running';
+  });
+
   // First refresh shortly after load to avoid jank
-  setTimeout(refresh, 100);
+  setTimeout(refresh, 500);
   // Update every 60 seconds
   setInterval(refresh, 60000);
 })();
